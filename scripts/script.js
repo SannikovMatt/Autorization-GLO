@@ -1,14 +1,12 @@
 'use strict';
 let userData = [];
 
-if(localStorage.getItem('users')){
+if (localStorage.getItem('users')) {
     userData = JSON.parse(localStorage.getItem('users'));
-
-    
-}else{
+} else {
 
     userData = [];
- }
+}
 
 let registrationBT = document.getElementById('registration'),
     autorizationBT = document.getElementById('authorization'),
@@ -52,11 +50,6 @@ User.prototype.getDate = function () {
     let dateStr = 'Зарегистрирован: ' + date.getDate() + ' ' + monthArr[date.getMonth()] +
         ' ' + date.getFullYear() + ' года в ' + hour + ':' + min + ':' + sec;
 
-
-
-
-
-
     return dateStr;
 };
 
@@ -64,22 +57,20 @@ function fieldsValidation(question, neededType) {
 
     let itemToValid;
 
-
-
     if (neededType === 'string' || neededType === 'nameSurName') {
 
         do {
             itemToValid = prompt(question[0], question[1]);
 
             if (itemToValid === null) { return; }
-            itemToValid.trim();
+            itemToValid = itemToValid.trim();
         }
         while (typeof itemToValid !== typeof ("string") || !isNaN(itemToValid));
 
+        let pattern = /^[а-яА-ЯA-Za-z]{3,} [а-яА-Яa-zA-z]{3,}$/;
 
-
-        if (neededType === 'nameSurName' && !itemToValid.includes(' ')) {
-            alert('Поробуйте еще раз,не забывайте пробел между Именем и Фамилией');
+        if (neededType === 'nameSurName' && !pattern.test(itemToValid)) {
+            alert('Имя и Фамилия должны быть не короче 3х букв.А также разделяйте их пробелом');
 
             return fieldsValidation(question, neededType);
 
@@ -106,9 +97,6 @@ function fieldsValidation(question, neededType) {
 
 }
 
-
-
-
 let render = function () {
     userList.innerHTML = '';
 
@@ -121,16 +109,20 @@ let render = function () {
             li.innerHTML = '<p>Имя: ' + item.firstname + ' Фамилия: ' + item.secondName +
                 ' , ' + item.date + '</p>' + '<button  class = "delete-user">Удалить </button> ';
 
+            if (item.autorized) {
+                document.getElementById('UserGreating').innerHTML = 'Привет ' + item.firstname;
+            }
+
 
             li.querySelector('.delete-user').addEventListener('click', function () {
 
                 let ind = userData.indexOf(item);
-                if(userData[ind].autorized){
+                if (userData[ind].autorized) {
                     document.getElementById('UserGreating').innerHTML = 'Привет Аноним';
 
                 };
 
-                userData.splice(ind,1);
+                userData.splice(ind, 1);
                 render();
 
             });
@@ -147,17 +139,44 @@ let render = function () {
 
 };
 
+function includeLogin(login) {
 
+    
 
+    for (let users of userData) {
+
+        if (users.login === login) {
+
+            return true;
+
+        } 
+
+    }
+    return false;
+}
 
 registrationBT.addEventListener('click', function () {
+    let login, pswd, nameSurName;
 
-
-    let nameSurName = fieldsValidation(['Введите ваше имя и фамилию в формате указаном ниже', 'Имя Фамилия'], 'nameSurName');
+    nameSurName = fieldsValidation(['Введите ваше имя и фамилию в формате указаном ниже', 'Имя Фамилия'], 'nameSurName');
     if (!nameSurName) { return; }
-    let login = fieldsValidation(['Введите логин', ''], 'string');
-    if (!login) { return; }
-    let pswd = fieldsValidation(['Введите пароль', ''], 'stringOrNum');
+
+
+    do {
+
+        login = fieldsValidation(['Введите логин', ''], 'string');
+        if (!login) { return; }
+        if(includeLogin(login)){
+            alert('Такой логин уже есть в базе');
+        }
+
+    }
+    while (includeLogin(login));
+
+
+
+
+    pswd = fieldsValidation(['Введите пароль', ''], 'stringOrNum');
     if (!pswd) { return; }
 
     nameSurName = nameSurName.split(' ');
@@ -169,31 +188,49 @@ registrationBT.addEventListener('click', function () {
 
 });
 
-autorizationBT.addEventListener('click',function(){
+autorizationBT.addEventListener('click', function () {
 
-    let userLogin = fieldsValidation(['Введите свой логин',''],'stringOrNum');
-    if(!userLogin){return;}
-    let userPaswd = fieldsValidation(['Введите пароль',''],'stringOrNum');
-    if(!userPaswd){return;}
 
-  
-        if(userData.includes(User.login === userLogin)){alert('hi')}
-            if(item.login === userLogin && item.password === userPaswd){               
+    if (userData.length === 0) {
+        alert('База данных пуста');
+        return;
+    }
 
-                for(let users of  userData){
+    let userLogin = fieldsValidation(['Введите свой логин', ''], 'stringOrNum');
+    if (!userLogin) { return; }
+    let userPaswd = fieldsValidation(['Введите пароль', ''], 'stringOrNum');
+    if (!userPaswd) { return; }
+
+    let got = false;
+
+    userData.forEach(function (item) {
+
+        if (item) {
+
+            if (item.login === userLogin && item.password === userPaswd) {
+
+                for (let users of userData) {
                     users.autorized = false;
                 }
 
                 item.autorized = true;
-                document.getElementById('UserGreating').innerHTML = 'Привет ' +  item.firstname;
-                render();
 
-           }else{
+                got = true;
+                render();
+                return;
+
+            }
+
+
+            if (userData[userData.length - 1] === item && !got) {
 
                 alert('Пользователь с такими данными не найден!');
             }
 
         }
+
+
+
 
 
     });
